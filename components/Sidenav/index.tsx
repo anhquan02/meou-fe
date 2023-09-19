@@ -36,9 +36,16 @@ const Sidenav = ({
   };
 
   const handleRouter = (path: any) => {
-    router.push(path);
+    if (typeof window !== "undefined") {
+      if (path === "/auth/logout") {
+        sessionStorage.removeItem("token");
+        store.dispatch({ type: "LOGOUT" });
+        router.push("/")
+        return
+      }
+      router.push(path);
+    }
   };
-
 
   return (
     <aside
@@ -106,7 +113,7 @@ const Sidenav = ({
                     fullWidth
                     onClick={() => handleRouter(path)}
                   >
-                    {icon}
+                    {icon || <span className="w-5 h-5" />}
                     <Typography
                       color="inherit"
                       className="font-medium capitalize"

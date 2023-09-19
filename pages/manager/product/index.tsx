@@ -10,6 +10,8 @@ import {
   Dialog,
   IconButton,
   Input,
+  Option,
+  Select,
   Tab,
   Tabs,
   TabsHeader,
@@ -29,6 +31,7 @@ import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { v4 } from "uuid";
 import { storage } from "../../../services/firebase";
 import { useRouter } from "next/router";
+import convertMoney from "../../../services/Utils";
 
 const TABLE_HEAD = [
   "STT",
@@ -62,6 +65,7 @@ const ProductPage = () => {
   const [size, setProduct] = useState<any>();
   const [fetching, setFetching] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
+  const [brands, setBrands] = useState<any[]>([]);
   const router = useRouter();
 
   const handleOpen = () => {
@@ -82,6 +86,8 @@ const ProductPage = () => {
   useEffect(() => {
     (async () => {
       setOpenLoading(true);
+      const brands = await getAllBrand();
+      setBrands(brands);
       await Fetch.get(
         `/api/v1/product/search-name?name=${searchName}&page=${currentPage}&size=${pageSize}`
       )
@@ -111,6 +117,27 @@ const ProductPage = () => {
         });
     })();
   }, []);
+
+  const getAllBrand = async () => {
+    return await Fetch.get("/api/v1/brand/all-list")
+      .then(async (res: any) => {
+        if (res.status === 200) {
+          let data = res.data.data;
+          onShowResult({
+            type: "success",
+            msg: "Lấy dữ liệu thành công!",
+          });
+          return data;
+        }
+      })
+      .catch((error: any) => {
+        onShowResult({
+          type: "error",
+          msg: error.message,
+        });
+        return [];
+      });
+  };
 
   const handleDownloadImage = async (image: any) => {
     if (!image) return "";
@@ -158,7 +185,8 @@ const ProductPage = () => {
         name: _product.name,
         description: _product.description,
         price: _product.price,
-        nameImage: image,
+        image: image,
+        brandId: _product.brandId,
         status: _product.status,
       };
       if (action === "create") {
@@ -171,6 +199,7 @@ const ProductPage = () => {
               });
               setFetching(!fetching);
               setOpenDialog(false);
+              router.push(`/manager/product/${res.data.data.id}`);
             }
           })
           .catch((error: any) => {
@@ -213,9 +242,12 @@ const ProductPage = () => {
             let data = res.data.data.content;
             data.map(async (item: any) => {
               item.image = await handleDownloadImage(item.image);
-              item.price = item.minPrice + " ~ " + item.maxPrice;
+              item.price =
+                convertMoney(item.minPrice || 0) +
+                " ~ " +
+                convertMoney(item.maxPrice || 0);
               if (item.minPrice == item.maxPrice) {
-                item.price = item.minPrice;
+                item.price = convertMoney(item.minPrice || 0);
               }
             });
             setData(data);
@@ -257,6 +289,7 @@ const ProductPage = () => {
         handleOpen={handleOpen}
         action={action}
         size={size}
+        brands={brands}
         onConfirm={(size: any) => {
           handleConfirm(size);
         }}
@@ -466,7 +499,14 @@ const ProductPage = () => {
   );
 };
 
-const ModalProduct = ({ open, handleOpen, size, action, onConfirm }: any) => {
+const ModalProduct = ({
+  open,
+  handleOpen,
+  size,
+  action,
+  onConfirm,
+  brands,
+}: any) => {
   const [showDialog, setShowDialog] = useState(false);
   const [openConfirm, setOpenConfirm] = useState(false);
   const [productState, setProductState] = useState({
@@ -476,7 +516,7 @@ const ModalProduct = ({ open, handleOpen, size, action, onConfirm }: any) => {
     // price: 0 as any,
     image: "",
     imageRef: "" as any,
-    status: true,
+    status: 1 as any,
   });
   const fileInput = useRef<HTMLInputElement | any>(null);
 
@@ -510,7 +550,7 @@ const ModalProduct = ({ open, handleOpen, size, action, onConfirm }: any) => {
         // price: 0,
         image: "",
         imageRef: "",
-        status: true,
+        status: 1,
       });
   }, [size]);
 
@@ -563,6 +603,24 @@ const ModalProduct = ({ open, handleOpen, size, action, onConfirm }: any) => {
                     }
                     defaultValue={productState?.description}
                   />
+                </div>
+                <div className="relative w-full mb-3 gap-3">
+                  <Select label="Thương hiệu" size="md">
+                    {brands.map((item: any) => (
+                      <Option
+                        key={item.id}
+                        value={item.id + ""}
+                        onClick={() => {
+                          setProductState((cur) => ({
+                            ...cur,
+                            brandId: item.id,
+                          }));
+                        }}
+                      >
+                        {item.name}
+                      </Option>
+                    ))}
+                  </Select>
                 </div>
                 {/* <div className="relative w-full mb-3 gap-3">
                   <Input

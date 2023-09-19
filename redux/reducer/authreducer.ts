@@ -2,10 +2,12 @@ import { LOGIN, LOGOUT } from "../action/auth";
 
 interface AuthState {
     token: string;
+    user: any;
 }
 
 const initialState: AuthState = {
-    token: ''
+    token: '',
+    user :{}
 };
 
 export default function AuthReducer(state = initialState, content: any) {
@@ -14,12 +16,14 @@ export default function AuthReducer(state = initialState, content: any) {
         case LOGIN:
             return {
                 ...state,
-                token: payload
+                token: payload.token,
+                user: payload.user
             };
         case LOGOUT:
             return {
                 ...state,
-                token: ''
+                token: '',
+                user: {}
             };
         default:
             return state;

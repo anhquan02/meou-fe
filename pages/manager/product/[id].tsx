@@ -40,6 +40,7 @@ import {
 } from "@heroicons/react/24/solid";
 import ConfirmDialog from "../../../components/ConfirmDialog";
 import { v4 } from "uuid";
+import convertMoney from "../../../services/Utils";
 
 const MAPPING_EN_VI = {
   brand: "Thương hiệu",
@@ -99,7 +100,7 @@ const ProductDetail = () => {
     price: 0 as any,
     description: "",
     quantity: 0 as any,
-    status: true,
+    status: true as any,
   });
   const [newItems, setNewItems] = useState<ProductItem>({
     brandId: 1,
@@ -307,7 +308,8 @@ const ProductDetail = () => {
           if (res.status === 200) {
             let data = res.data.data;
             data.imageURL = await handleDownloadImage(data.image);
-            data.price = data.minPrice + " ~ " + data.maxPrice;
+            data.price =
+              convertMoney(data.minPrice) + " ~ " + convertMoney(data.maxPrice);
             if (data.minPrice == data.maxPrice) {
               data.price = data.minPrice;
             }
@@ -479,7 +481,7 @@ const ProductDetail = () => {
           });
         });
     } else if (action == "update-item") {
-      console.log(productItem)
+      console.log(productItem);
       Fetch.put("/api/v1/product-item", { dto: [productItem] })
         .then((res: any) => {
           if (res.status === 200) {
@@ -917,12 +919,12 @@ const ProductDetail = () => {
 
   const detailRef = useRef<any>(null);
 
-
   const updateRef = useRef<any>(null);
   useEffect(() => {
     if (action == "update-item") {
       updateRef.current?.click();
-    }if(action == "update-product"){
+    }
+    if (action == "update-product") {
       detailRef.current?.click();
     }
   }, [action]);
@@ -982,13 +984,19 @@ const ProductDetail = () => {
                       name="color"
                       color="green"
                       label="Đang kinh doanh"
-                      defaultChecked={product.status}
+                      defaultChecked={product.status ==1}
+                      onClick={()=>{
+                        setProduct({ ...product, status: 1 });
+                      }}
                     />
                     <Radio
                       name="color"
                       color="red"
                       label="Ngừng kinh doanh"
-                      defaultChecked={!product.status}
+                      defaultChecked={product.status != 1}
+                      onClick={()=>{
+                        setProduct({ ...product, status: 2 });
+                      }}
                     />
                   </div>
                 </div>
@@ -1188,7 +1196,9 @@ const ProductDetail = () => {
                                         (item) => item.id === insoleId
                                       )?.name || ""}
                                     </td>
-                                    <td className={className}>{price}</td>
+                                    <td className={className}>
+                                      {convertMoney(price)}
+                                    </td>
                                     <td className={className}>{quantity}</td>
                                     <td className={className}>
                                       <Tooltip content="Sửa">

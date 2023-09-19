@@ -15,8 +15,16 @@ import { useStore } from "react-redux";
 import { useRouter } from "next/router";
 import Notify from "../../components/Notify";
 
-export function SignIn() {
-  const params = useRef({ username: "", password: "" });
+export function SignUp() {
+  const params = useRef({
+    username: "",
+    password: "",
+    fullname: "",
+    email: "",
+    phone: "",
+    address: "",
+    confirmPassword: "",
+  });
   const router = useRouter();
   const [openLoading, setOpenLoading] = useState(false);
   const [openSnack, setOpenSnack] = useState(false);
@@ -24,38 +32,47 @@ export function SignIn() {
   const [snackMsg, setSnackMsg] = useState("");
   const store = useStore();
 
-  const handleSignIn = () => {
-    Fetch.post("/api/v1/account/login", params.current)
+  const handleSignUp = () => {
+    if (params.current.password !== params.current.confirmPassword) {
+      onShowResult({
+        type: "error",
+        msg: "Mật khẩu không khớp!",
+      });
+      return;
+    }
+    setOpenLoading(true);
+    Fetch.post("/api/v1/account/register", params.current)
       .then((res: any) => {
         if (res.status === 200) {
-          sessionStorage.setItem("token", res.data.token);
+        //   sessionStorage.setItem("token", res.data.token);
           onShowResult({
             type: "success",
-            msg: "Đăng nhập thành công!",
+            msg: "Đăng ký thành công!",
           });
-          store.dispatch({
-            type: "LOGIN",
-            payload: {
-              token: res.data.token,
-              user: { username: res.data.username, roleId: res.data.roleId },
-            },
-          });
-          if (res.data.roleId === 1) {
-            router.push("/manager/home");
-          }else{
-            router.push("/");
-          }
+        //   store.dispatch({
+        //     type: "LOGIN",
+        //     payload: {
+        //       token: res.data.token,
+        //       user: { username: res.data.username, roleId: res.data.roleId },
+        //     },
+        //   });
+        //   if (res.data.roleId === 1) {
+        //     router.push("/manager/home");
+        //   } else {
+        //     router.push("/");
+        //   }
+        router.push("/auth/login");
         } else {
           onShowResult({
             type: "error",
-            msg: "Sai tên đăng nhập hoặc mật khẩu!",
+            msg: "Sai tên đăng ký hoặc mật khẩu!",
           });
         }
       })
       .catch((error: any) => {
         onShowResult({
           type: "error",
-          msg: "Đăng nhập thất bại!",
+          msg: "Đăng ký thất bại!",
         });
       });
   };
@@ -93,10 +110,45 @@ export function SignIn() {
             className="mb-4 grid h-28 place-items-center"
           >
             <Typography variant="h3" color="white">
-              Đăng nhập
+              Đăng Ký
             </Typography>
           </CardHeader>
           <CardBody className="flex flex-col gap-4">
+            <Input
+              type="username"
+              label="Tên"
+              size="lg"
+              onChange={(e) => {
+                params.current.fullname = e.target.value;
+              }}
+            />
+            {/* email */}
+            <Input
+              type="username"
+              label="Email"
+              size="lg"
+              onChange={(e) => {
+                params.current.email = e.target.value;
+              }}
+            />
+            {/* phone */}
+            <Input
+              type="username"
+              label="Số điện thoại"
+              size="lg"
+              onChange={(e) => {
+                params.current.phone = e.target.value;
+              }}
+            />
+            {/* address */}
+            <Input
+              type="username"
+              label="Địa chỉ"
+              size="lg"
+              onChange={(e) => {
+                params.current.address = e.target.value;
+              }}
+            />
             <Input
               type="username"
               label="Tên đăng nhập"
@@ -113,24 +165,33 @@ export function SignIn() {
                 params.current.password = e.target.value;
               }}
             />
+            {/* confirm password */}
+            <Input
+              type="password"
+              label="Nhập lại mật khẩu"
+              size="lg"
+              onChange={(e) => {
+                params.current.confirmPassword = e.target.value;
+              }}
+            />
             <div className="-ml-2.5">
               <Checkbox label="Ghi nhớ đăng nhập" />
             </div>
           </CardBody>
           <CardFooter className="pt-0">
-            <Button variant="gradient" fullWidth onClick={() => handleSignIn()}>
-              Đăng nhập
+            <Button variant="gradient" fullWidth onClick={() => handleSignUp()}>
+              Đăng ký
             </Button>
             <Typography variant="small" className="mt-6 flex justify-center">
-              Bạn chưa có tài khoản?
-              <Link href="" as="/auth/sign-up">
+              Bạn đã có tài khoản?
+              <Link href="" as="/auth/login">
                 <Typography
                   as="span"
                   variant="small"
                   color="blue"
                   className="ml-1 font-bold"
                 >
-                  Đăng ký
+                  Đăng nhập
                 </Typography>
               </Link>
             </Typography>
@@ -141,4 +202,4 @@ export function SignIn() {
   );
 }
 
-export default SignIn;
+export default SignUp;

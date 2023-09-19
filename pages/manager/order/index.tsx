@@ -14,6 +14,7 @@ import {
 } from "@material-tailwind/react";
 import { ChevronUpDownIcon, PencilIcon } from "@heroicons/react/24/solid";
 import { useRouter } from "next/router";
+import convertMoney from "../../../services/Utils";
 
 const TABLE_HEAD = [
   "STT",
@@ -211,7 +212,7 @@ const OrderPage = () => {
                               color="blue-gray"
                               className="font-normal"
                             >
-                              {totalPrice}
+                              {convertMoney(totalPrice || 0)}
                             </Typography>
                           </div>
                         </div>

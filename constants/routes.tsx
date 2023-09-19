@@ -4,7 +4,8 @@ import {
   UserPlusIcon,
   RectangleGroupIcon,
   BanknotesIcon,
-  ShoppingCartIcon
+  ShoppingCartIcon,
+  GiftIcon
 } from "@heroicons/react/24/solid";
 
 const icon = {
@@ -26,43 +27,61 @@ export var routes = [
         icon: <RectangleGroupIcon {...icon} />,
         name: "Sản phẩm",
         path: "/manager/product",
-        isOpen:false,
-        children: [
-          {
-            childName: "Lót giày",
-            path: "/manager/product/insole",
-          }
-        ]
       },
       {
-        id:2,
+        id:3,        
+        name: "Đế giày",
+        path: "/manager/sole",
+      },
+      {
+        id:3,        
+        name: "Lót giày",
+        path: "/manager/insole",
+      },
+      {
+        id:4,        
+        name: "Thương hiệu",
+        path: "/manager/brand",
+      },
+      {
+        id:4,        
+        name: "Kích cỡ",
+        path: "/manager/size",
+      },
+      {
+        id:4,        
+        name: "Màu sắc",
+        path: "/manager/color",
+      },
+      {
+        id:5,
         icon: <BanknotesIcon {...icon} />,
         name: "Hóa đơn",
         path: "/manager/order",
       },
       {
-        id:2,
+        id:6,
         icon: <ShoppingCartIcon {...icon} />,
         name: "Bán hàng tại quầy",
         path: "/manager/shopping",
       },
+      {
+        id:6,
+        icon: <GiftIcon {...icon} />,
+        name: "Khuyến mãi",
+        path: "/manager/voucher",
+      },
     ],
   },
   {
-    title: "auth pages",
+    title: "Xác thực",
     layout: "auth",
     pages: [
       {
         id:1,
         icon: <ArrowRightOnRectangleIcon {...icon} />,
-        name: "sign in",
-        path: "/sign-in",
-      },
-      {
-        id:2,
-        icon: <UserPlusIcon {...icon} />,
-        name: "sign up",
-        path: "/sign-up",
+        name: "Đăng xuất",
+        path: "/auth/logout",
       },
     ],
   },

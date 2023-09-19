@@ -13,6 +13,7 @@ import {
   DialogHeader,
   IconButton,
   Input,
+  Select,
   Textarea,
   Typography,
 } from "@material-tailwind/react";
@@ -22,6 +23,7 @@ import {
   ShoppingCartIcon,
 } from "@heroicons/react/24/solid";
 import Image from "next/image";
+import convertMoney from "../../../services/Utils";
 
 const ShoppingPage = () => {
   const [showDialog, setShowDialog] = useState(false);
@@ -35,7 +37,7 @@ const ShoppingPage = () => {
   const [sole, setSole] = useState<any[]>([]);
   const [insole, setInsole] = useState<any[]>([]);
   const [productItems, setProductItems] = useState<any[]>([]);
-
+  const [customer, setCustomer] = useState<any[]>([]);
   const [orderInformation, setOrderInformation] = useState<any>({});
   const [orderItems, setOrderItems] = useState<any[]>([]);
 
@@ -88,6 +90,23 @@ const ShoppingPage = () => {
           type: "error",
           msg: error.message,
         });
+        return [];
+      });
+  };
+
+  const getCustomerByPhone = async (phone: any) => {
+    if (phone.length < 10) {
+      setCustomer([]);
+      return [];
+    }
+    return await Fetch.get(`/api/v1/account/search-customer?phone=${phone}`)
+      .then((res: any) => {
+        if (res.status === 200) {
+          setCustomer(res.data.data);
+          return res.data.data;
+        }
+      })
+      .catch((error) => {
         return [];
       });
   };
@@ -475,7 +494,7 @@ const ShoppingPage = () => {
                             <td className="p-4">
                               <div className="flex flex-col gap-2">
                                 <span className="text-sm font-semibold">
-                                  {item.price}
+                                  {convertMoney(item.price)}
                                 </span>
                               </div>
                             </td>
@@ -504,7 +523,7 @@ const ShoppingPage = () => {
                             <td className="p-4">
                               <div className="flex flex-col gap-2">
                                 <span className="text-sm font-semibold">
-                                  {item.price * item.quantity}
+                                  {convertMoney(item.price * item.quantity)}
                                 </span>
                               </div>
                             </td>
@@ -528,6 +547,61 @@ const ShoppingPage = () => {
         </CardBody>
       </Card>
       <div className="my-6"></div>
+      <div className="flex flex-row w-full">
+        <div className="w-3/4">
+          <Typography variant="h5">Tài khoản</Typography>
+        </div>
+        <div className="w-1/4">
+          <Input
+            label="Số điện thoại"
+            className=""
+            onChange={(e: any) => {
+              getCustomerByPhone(e.target.value);
+            }}
+          />
+        </div>
+      </div>
+      <div className="my-4">
+        {customer.length != 0 &&
+          customer.map((item: any, index: number) => {
+            return (
+              <div
+                key={index}
+                className="w-full flex flex-row gap-4 items-center p-4"
+              >
+                <div className="w-1/5">
+                  <Typography variant="h6">{item.username}</Typography>
+                </div>
+                <div className="w-1/5">
+                  <Typography variant="h6">{item.phone}</Typography>
+                </div>
+                <div className="w-1/5">
+                  <Typography variant="h6">{item.address}</Typography>
+                </div>
+                <div className="w-1/5">
+                  <Typography variant="h6">{item.email}</Typography>
+                </div>
+                <div className="w-1/5">
+                  <Button
+                    className="w-full"
+                    onClick={() => {
+                      setOrderInformation({
+                        nameCustomer: item.name,
+                        phoneCustomer: item.phone,
+                        addressCustomer: item.address,
+                        emailCustomer: item.email,
+                      });
+                    }}
+                  >
+                    Chọn
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+      </div>
+      <hr className="border border-blue-gray-300 my-4" />
+      <div className="my-6"></div>
       <Typography variant="h5">Khách hàng</Typography>
       <hr className="border border-blue-gray-300 my-4" />
       <div className="w-full flex flex-row">
@@ -539,6 +613,7 @@ const ShoppingPage = () => {
                   label="Tên khách hàng"
                   type="text"
                   color="light-blue"
+                  value={orderInformation.nameCustomer}
                   onChange={(e) => {
                     setOrderInformation({
                       ...orderInformation,
@@ -550,6 +625,7 @@ const ShoppingPage = () => {
                   label="Số điện thoại"
                   type="text"
                   color="light-blue"
+                  value={orderInformation.phoneCustomer}
                   onChange={(e) => {
                     setOrderInformation({
                       ...orderInformation,
@@ -561,6 +637,7 @@ const ShoppingPage = () => {
                   label="Địa chỉ"
                   type="text"
                   color="light-blue"
+                  value={orderInformation.addressCustomer}
                   onChange={(e) => {
                     setOrderInformation({
                       ...orderInformation,
@@ -573,6 +650,7 @@ const ShoppingPage = () => {
                   label="Email"
                   type="text"
                   color="light-blue"
+                  value={orderInformation.emailCustomer}
                   onChange={(e) => {
                     setOrderInformation({
                       ...orderInformation,
@@ -585,6 +663,7 @@ const ShoppingPage = () => {
                 label="Ghi chú"
                 className="w-full "
                 color="light-blue"
+                value={orderInformation.note}
                 onChange={(e) => {
                   setOrderInformation({
                     ...orderInformation,
@@ -599,7 +678,7 @@ const ShoppingPage = () => {
           <div className="w-full flex justify-between">
             <Typography color="blue-gray">Tiền hàng</Typography>
             <Typography color="blue-gray">
-              {calculateTotalPrice()} VND
+              {convertMoney(calculateTotalPrice())} VND
             </Typography>
           </div>
           <div className="w-full flex justify-between">
@@ -607,7 +686,7 @@ const ShoppingPage = () => {
               Tổng tiền
             </Typography>
             <Typography variant="h6" color="blue-gray">
-              {calculateTotalPrice()} VND
+              {convertMoney(calculateTotalPrice())} VND
             </Typography>
           </div>
           <Button

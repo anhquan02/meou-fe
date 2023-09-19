@@ -25,6 +25,7 @@ import {
   HomeIcon,
 } from "@heroicons/react/24/solid";
 import { Box, Step, StepLabel, Stepper } from "@mui/material";
+import convertMoney from "../../../services/Utils";
 
 const MAPPING_STATUS = {
   1: { value: "Đang chờ xử lý", color: "blue-gray" },
@@ -71,7 +72,7 @@ const OrderDetail = () => {
   const [order, setOrder] = useState<any>({});
   const [orderItems, setOrderItems] = useState<any>([]);
   const [transactions, setTransactions] = useState<any>([]);
-
+  const [renderState, setRenderState] = useState(false);
   const onCloseSnack = () => {
     setOpenSnack(false);
   };
@@ -99,6 +100,34 @@ const OrderDetail = () => {
       });
     return url;
   };
+
+  const changeStatus = useCallback(
+    async (statusId: number) => {
+      if (!order?.id) return;
+      setOpenLoading(true);
+      await Fetch.put(`/api/v1/order/change-status`, {
+        idOrder: order?.id,
+        idStatus: statusId,
+        note: "",
+      })
+        .then((res: any) => {
+          if (res.status === 200) {
+            onShowResult({
+              type: "success",
+              msg: "Cập nhật trạng thái thành công!",
+            });
+            setOrder((cur: any) => ({ ...cur, statusId: statusId }));
+          }
+        })
+        .catch((error: any) => {
+          onShowResult({
+            type: "error",
+            msg: error.message,
+          });
+        });
+    },
+    [order]
+  );
 
   useEffect(() => {
     (async () => {
@@ -129,6 +158,23 @@ const OrderDetail = () => {
         });
     })();
   }, [id]);
+
+  useEffect(() => {
+    (async () => {
+      await Fetch.get(`/api/v1/order-item/all?idOrder=${id}`)
+        .then((res: any) => {
+          if (res.status === 200) {
+            setTransactions(res.data.data.transactions);
+          }
+        })
+        .catch((error: any) => {
+          // onShowResult({
+          //   type: "error",
+          //   msg: error.message,
+          // });
+        });
+    })();
+  }, [changeStatus, id]);
 
   const renderTimeline = () => {
     if (order?.typeOrder == 1) {
@@ -246,7 +292,7 @@ const OrderDetail = () => {
                 <Input
                   type="text"
                   size="lg"
-                  value={ORDER_TYPE.STORE.text || ""}
+                  value={order?.typeOrders || ""}
                   disabled
                 />
                 <label htmlFor="">Trạng thái</label>
@@ -316,7 +362,188 @@ const OrderDetail = () => {
   };
 
   const renderTimelineOnline = () => {
-    return <></>;
+    return (
+      <>
+        <Box sx={{ width: "100%" }}>
+          <Stepper activeStep={order?.statusId - 1 || 0} alternativeLabel>
+            <Step completed={order?.statusId > 1 && order?.statusId != 9}>
+              <StepLabel>
+                <Typography variant="h6">Chờ xác nhận</Typography>
+              </StepLabel>
+            </Step>
+            <Step completed={order?.statusId > 2 && order?.statusId != 9}>
+              <StepLabel>
+                <Typography variant="h6">Xác nhận</Typography>
+              </StepLabel>
+            </Step>
+            <Step completed={order?.statusId > 3 && order?.statusId != 9}>
+              <StepLabel>
+                <Typography variant="h6">Đóng gói</Typography>
+              </StepLabel>
+            </Step>
+            <Step completed={order?.statusId > 4 && order?.statusId != 9}>
+              <StepLabel>
+                <Typography variant="h6">Giao hàng</Typography>
+              </StepLabel>
+            </Step>
+            <Step completed={order?.statusId >= 5 && order?.statusId != 9}>
+              <StepLabel>
+                <Typography variant="h6">Đã nhận hàng</Typography>
+              </StepLabel>
+            </Step>
+            <Step completed={order?.statusId == 9}>
+              <StepLabel>
+                <Typography variant="h6">Hủy đơn</Typography>
+              </StepLabel>
+            </Step>
+          </Stepper>
+        </Box>
+        <div className="w-full flex md:flex-row flex-col gap-4 py-4 my-4">
+          <div className="border border-blue-gray-100 rounded min-h-[200px] w-full">
+            <div className="w-full text-center text-blue-gray-600 my-2">
+              <Typography variant="h5">Lịch sử</Typography>
+              <div className="p-4">
+                <Timeline>
+                  {transactions.map((transaction: any, index: number) => {
+                    return (
+                      <TimelineItem key={index}>
+                        <TimelineConnector />
+                        <TimelineHeader>
+                          <TimelineIcon className="p-2" />
+                          <Typography variant="h6" color="blue-gray">
+                            {`${MAPPING_STATUS[transaction.statusId].value} (${
+                              transaction.createdDate
+                            })`}
+                          </Typography>
+                        </TimelineHeader>
+                        <TimelineBody className="pb-8">
+                          <Typography
+                            color="gray"
+                            className="font-normal text-gray-600"
+                          >
+                            {transaction.username || ""}
+                          </Typography>
+                          <span>{transaction.note || ""}</span>
+                        </TimelineBody>
+                      </TimelineItem>
+                    );
+                  })}
+                  {/* <TimelineItem>
+                    <TimelineConnector />
+                    <TimelineHeader>
+                      <TimelineIcon className="p-2" />
+                      <Typography variant="h6" color="blue-gray">
+                        Đã nhận hàng {`(${transactions[4].createdDate})`}
+                      </Typography>
+                    </TimelineHeader>
+                    <TimelineBody className="pb-8">
+                      <Typography
+                        color="gray"
+                        className="font-normal text-gray-600"
+                      >
+                        {transactions[4].username || ""}
+                      </Typography>
+                      <span>{transactions[4].note || ""}</span>
+                    </TimelineBody>
+                  </TimelineItem> */}
+                </Timeline>
+              </div>
+            </div>
+          </div>
+          <div className="border border-blue-gray-100 rounded min-h-[200px] w-full">
+            <div className="w-full text-center text-blue-gray-600 my-2">
+              <Typography variant="h5">Thông tin đơn hàng</Typography>
+            </div>
+            <div className="">
+              <div className="grid md:grid-cols-2 gap-4 items-center p-4">
+                <label htmlFor="">Mã đơn hàng</label>
+                <Input
+                  type="text"
+                  size="lg"
+                  value={order?.code || ""}
+                  disabled
+                />
+                <label htmlFor="">Nhân viên tạo hóa đơn</label>
+                <Input
+                  type="text"
+                  size="lg"
+                  value={order?.username || ""}
+                  disabled
+                />
+                <label htmlFor="">Phân loại</label>
+                <Input
+                  type="text"
+                  size="lg"
+                  value={ORDER_TYPE.ONLINE.text || ""}
+                  disabled
+                />
+                <label htmlFor="">Trạng thái</label>
+                <Input
+                  type="text"
+                  size="lg"
+                  value={MAPPING_STATUS[order?.statusId]?.value || ""}
+                  disabled
+                />
+                <label htmlFor="">Phương thức thanh toán</label>
+                <Input
+                  type="text"
+                  size="lg"
+                  value={order.paymentMethod || ""}
+                  disabled
+                />
+                <label htmlFor="">Tổng giá</label>
+                <Input
+                  type="text"
+                  size="lg"
+                  value={
+                    (order?.totalPrice && convertMoney(order?.totalPrice)) ||
+                    "0 VND"
+                  }
+                  disabled
+                />
+              </div>
+            </div>
+          </div>
+          <div className="border border-blue-gray-100 rounded min-h-[200px] w-full">
+            <div className="w-full text-center text-blue-gray-600 my-2">
+              <Typography variant="h5">Thông tin khách hàng</Typography>
+            </div>
+            <div className="">
+              <div className="grid md:grid-cols-2 gap-4 items-center p-4">
+                <label htmlFor="">Tên</label>
+                <Input
+                  type="text"
+                  size="lg"
+                  value={order?.nameCustomer || ""}
+                  disabled
+                />
+                <label htmlFor="">Số điện thoại</label>
+                <Input
+                  type="text"
+                  size="lg"
+                  value={order?.phoneCustomer || ""}
+                  disabled
+                />
+                <label htmlFor="">Địa chỉ</label>
+                <Input
+                  type="text"
+                  size="lg"
+                  value={order?.addressCustomer || ""}
+                  disabled
+                />
+                <label htmlFor="">Email</label>
+                <Input
+                  type="text"
+                  size="lg"
+                  value={order?.emailCustomer || ""}
+                  disabled
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
   };
 
   const renderUpdateStatusButton = useCallback(() => {
@@ -325,12 +552,65 @@ const OrderDetail = () => {
     switch (statusId) {
       case 1:
         return (
-          <Button color="blue-gray" size="lg" onClick={async () => {}}>
-            Xác nhận đơn hàng
+          <div className="flex gap-4">
+            <Button
+              color="red"
+              size="lg"
+              onClick={async () => {
+                changeStatus(9);
+              }}
+            >
+              Huỷ đơn hàng
+            </Button>
+            <Button
+              color="blue-gray"
+              size="lg"
+              onClick={async () => {
+                changeStatus(2);
+              }}
+            >
+              Xác nhận đơn hàng
+            </Button>
+          </div>
+        );
+      case 2:
+        return (
+          <Button
+            color="blue-gray"
+            size="lg"
+            onClick={async () => {
+              changeStatus(3);
+            }}
+          >
+            Đóng gói
+          </Button>
+        );
+      case 3:
+        return (
+          <Button
+            color="blue-gray"
+            size="lg"
+            onClick={async () => {
+              changeStatus(4);
+            }}
+          >
+            Giao hàng
+          </Button>
+        );
+      case 4:
+        return (
+          <Button
+            color="blue-gray"
+            size="lg"
+            onClick={async () => {
+              changeStatus(5);
+            }}
+          >
+            Đã nhận hàng
           </Button>
         );
     }
-  }, []);
+  }, [order]);
 
   return (
     <>
@@ -503,7 +783,7 @@ const OrderDetail = () => {
                             color="blue-gray"
                             className="font-normal"
                           >
-                            {priceSell || ""}
+                            {convertMoney(priceSell) || ""}
                           </Typography>
                         </td>
                         <td className={className}>
@@ -564,8 +844,8 @@ const OrderDetail = () => {
             Tổng giá: {order?.totalPrice || ""} VND
           </Typography>
         </CardFooter> */}
-        <div className="flex justify-end">{renderUpdateStatusButton()}</div>
       </Card>
+      <div className="flex justify-end my-4">{renderUpdateStatusButton()}</div>
     </>
   );
 };
