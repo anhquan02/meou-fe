@@ -13,6 +13,7 @@ import {
   DialogHeader,
   IconButton,
   Input,
+  Option,
   Select,
   Textarea,
   Typography,
@@ -24,6 +25,7 @@ import {
 } from "@heroicons/react/24/solid";
 import Image from "next/image";
 import convertMoney from "../../../services/Utils";
+import ConfirmDialog from "../../../components/ConfirmDialog";
 
 const ShoppingPage = () => {
   const [showDialog, setShowDialog] = useState(false);
@@ -40,6 +42,8 @@ const ShoppingPage = () => {
   const [customer, setCustomer] = useState<any[]>([]);
   const [orderInformation, setOrderInformation] = useState<any>({});
   const [orderItems, setOrderItems] = useState<any[]>([]);
+  const [filter, setFilter] = useState<any>({});
+  const [openConfirm, setOpenConfirm] = useState(false);
 
   const handleOpen = () => {
     setShowDialog(!showDialog);
@@ -234,6 +238,31 @@ const ShoppingPage = () => {
     })();
   }, []);
 
+  useEffect(() => {
+    (async () => {
+      Fetch.post("/api/v1/product-item/search-countersale", filter)
+        .then((res: any) => {
+          if (res.status === 200) {
+            let data = res.data.data;
+            data.map(async (item: any) => {
+              if (!item.imageList || item.imageList.length == 0) {
+                item.image = "";
+              } else {
+                item.image = await handleDownloadImage(item.imageList[0].name);
+              }
+            });
+            setProductItems(data);
+          }
+        })
+        .catch((error: any) => {
+          onShowResult({
+            type: "error",
+            msg: error.message,
+          });
+        });
+    })();
+  }, [filter]);
+
   const handleAddToCart = (item: any) => {
     const orderItem = { ...item };
     orderItem.quantity = 1;
@@ -351,10 +380,61 @@ const ShoppingPage = () => {
         snackMsg={snackMsg}
         onClose={onCloseSnack}
       />
-      <Dialog open={showDialog} handler={handleOpen} className="max-h-[600px]">
+      <ConfirmDialog
+        onShow={openConfirm}
+        onClose={() => {
+          setOpenConfirm(false);
+        }}
+        onConfirm={() => handleCreateOrder()}
+      />
+      <Dialog
+        open={showDialog}
+        handler={handleOpen}
+        size="md"
+        className="max-h-[800px]"
+      >
         <DialogHeader>Tìm kiếm sản phẩm</DialogHeader>
         <DialogBody divider className="">
-          <Card className="">
+          <Card className="w-full">
+            <div className="w-full my-2 z-20">
+              <div className="w-full">
+                <Input
+                  label="Tên sản phẩm"
+                  color="light-blue"
+                  type="text"
+                  value={filter?.name || ""}
+                  onChange={(e: any) => {
+                    setFilter({
+                      ...filter,
+                      name: e.target.value,
+                    });
+                  }}
+                />
+              </div>
+              <div className="grid grid-cols-2 my-2 gap-2">
+                {/* Select sole */}
+                {/* {productItems && (
+                  <Select
+                    label="Đế giày"
+                    value={filter?.soleId + ""}
+                    onChange={(value: any) => {
+                      setFilter({
+                        ...filter,
+                        soleId: value,
+                      });
+                    }}
+                  >
+                    {sole.map((item: any, index: number) => {
+                      return (
+                        <Option key={item.id} value={item.id + ""}>
+                          {item.name}
+                        </Option>
+                      );
+                    })}
+                  </Select>
+                )} */}
+              </div>
+            </div>
             <table className=" table-auto text-left overflow-scroll w-full h-[500px] block">
               <thead className="">
                 <tr>
@@ -404,7 +484,7 @@ const ShoppingPage = () => {
                       <td>
                         <div className="flex flex-col gap-2">
                           <span className="text-sm font-semibold">
-                            {item.price}
+                            {convertMoney(item.price || 0)}
                           </span>
                         </div>
                       </td>
@@ -586,7 +666,7 @@ const ShoppingPage = () => {
                     className="w-full"
                     onClick={() => {
                       setOrderInformation({
-                        nameCustomer: item.name,
+                        nameCustomer: item.fullname,
                         phoneCustomer: item.phone,
                         addressCustomer: item.address,
                         emailCustomer: item.email,
@@ -692,7 +772,7 @@ const ShoppingPage = () => {
           <Button
             className="w-full mt-auto"
             onClick={() => {
-              handleCreateOrder();
+              setOpenConfirm(true);
             }}
           >
             Xác nhận đặt hàng

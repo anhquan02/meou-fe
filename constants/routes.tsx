@@ -5,7 +5,7 @@ import {
   RectangleGroupIcon,
   BanknotesIcon,
   ShoppingCartIcon,
-  GiftIcon
+  UserGroupIcon
 } from "@heroicons/react/24/solid";
 
 const icon = {
@@ -66,11 +66,17 @@ export var routes = [
         path: "/manager/shopping",
       },
       {
-        id:6,
-        icon: <GiftIcon {...icon} />,
-        name: "Khuyến mãi",
-        path: "/manager/voucher",
+        id:7,
+        icon: <UserGroupIcon {...icon} />,
+        name: "Nhân viên",
+        path: "/manager/staff",
       },
+      // {
+      //   id:6,
+      //   icon: <GiftIcon {...icon} />,
+      //   name: "Khuyến mãi",
+      //   path: "/manager/voucher",
+      // },
     ],
   },
   {

@@ -54,7 +54,7 @@ const profileMenuItems = [
   },
 ];
 
-function ProfileMenu({store}:any) {
+function ProfileMenu({ store }: any) {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
   const closeMenu = () => setIsMenuOpen(false);
@@ -88,17 +88,18 @@ function ProfileMenu({store}:any) {
           return (
             <MenuItem
               key={label}
-              onClick={() =>{
+              onClick={() => {
                 closeMenu();
-                if(label === "Sign Out"){
-                  store.dispatch({type:"LOGOUT"});
+                if (label === "Sign Out") {
+                  sessionStorage.removeItem("token");
+                  store.dispatch({ type: "LOGOUT" });
                 }
               }}
               className={`flex items-center gap-2 rounded ${
                 isLastItem
                   ? "hover:bg-red-500/10 focus:bg-red-500/10 active:bg-red-500/10"
                   : ""
-              }`}              
+              }`}
             >
               {React.createElement(icon, {
                 className: `h-4 w-4 ${isLastItem ? "text-red-500" : ""}`,
@@ -132,26 +133,34 @@ const navListItems = [
     icon: ShoppingCartIcon,
     href: "/cart",
   },
+  {
+    label: "Đơn hàng",
+    icon: CubeTransparentIcon,
+    href: "/order",
+  },
 ];
 
-function NavList() {
+function NavList({ isSignIn = false }: any) {
   return (
     <ul className="mb-4 mt-2 flex flex-col gap-2 lg:mb-0 lg:mt-0 lg:flex-row lg:items-center">
-      {navListItems.map(({ label, icon, href }, key) => (
-        <Typography
-          key={label}
-          as="a"
-          href={href}
-          variant="small"
-          color="blue-gray"
-          className="font-normal"
-        >
-          <MenuItem className="flex items-center gap-2 lg:rounded-full">
-            {React.createElement(icon, { className: "h-[18px] w-[18px]" })}{" "}
-            {label}
-          </MenuItem>
-        </Typography>
-      ))}
+      {navListItems.map(({ label, icon, href }, key) => {
+        if (!isSignIn && href == "/order") return null;
+        return (
+          <Typography
+            key={label}
+            as="a"
+            href={href}
+            variant="small"
+            color="blue-gray"
+            className="font-normal"
+          >
+            <MenuItem className="flex items-center gap-2 lg:rounded-full">
+              {React.createElement(icon, { className: "h-[18px] w-[18px]" })}{" "}
+              {label}
+            </MenuItem>
+          </Typography>
+        );
+      })}
     </ul>
   );
 }
@@ -191,7 +200,7 @@ export function ComplexNavbar() {
           Mèo Ú
         </Typography>
         <div className="absolute top-2/4 left-2/4 hidden -translate-x-2/4 -translate-y-2/4 lg:block">
-          <NavList />
+          <NavList isSignIn={isSignIn} />
         </div>
         <IconButton
           size="sm"
@@ -217,7 +226,7 @@ export function ComplexNavbar() {
         )}
       </div>
       <Collapse open={isNavOpen} className="overflow-scroll">
-        <NavList />
+        <NavList isSignIn={isSignIn}  />
       </Collapse>
     </Navbar>
   );

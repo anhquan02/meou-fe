@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { use, useCallback, useEffect, useState } from "react";
 import Notify from "../../../components/Notify";
 import {
   Button,
@@ -6,16 +6,12 @@ import {
   CardBody,
   CardFooter,
   CardHeader,
-  Chip,
   Dialog,
   IconButton,
   Input,
-  Option,
-  Select,
   Tab,
   Tabs,
   TabsHeader,
-  Textarea,
   Tooltip,
   Typography,
 } from "@material-tailwind/react";
@@ -27,20 +23,14 @@ import {
 } from "@heroicons/react/24/solid";
 import Fetch from "../../../services/Fetch";
 import ConfirmDialog from "../../../components/ConfirmDialog";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import { v4 } from "uuid";
-import { storage } from "../../../services/firebase";
-import { useRouter } from "next/router";
-import convertMoney from "../../../services/Utils";
 
 const TABLE_HEAD = [
   "STT",
-  "Tên",
-  "Hình ảnh",
-  // "Mô tả",
-  "Số lượng",
-  "Giá",
-  "Trạng thái",
+  "Tên đăng nhập",
+  "Tên khách hàng",
+  "email",
+  "Số điện thoại",
+  "Địa chỉ",
   "Hành động",
 ];
 
@@ -51,7 +41,7 @@ const TABS = [
   },
 ];
 
-const ProductPage = () => {
+const StaffPage = () => {
   const [openLoading, setOpenLoading] = useState(false);
   const [openSnack, setOpenSnack] = useState(false);
   const [alertType, setAlertType] = useState("success");
@@ -62,12 +52,9 @@ const ProductPage = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [action, setAction] = useState("create");
-  const [size, setProduct] = useState<any>();
+  const [sole, setSole] = useState<any>();
   const [fetching, setFetching] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
-  const [brands, setBrands] = useState<any[]>([]);
-  const router = useRouter();
-
   const handleOpen = () => {
     setOpenDialog(!openDialog);
   };
@@ -84,113 +71,38 @@ const ProductPage = () => {
   };
 
   useEffect(() => {
-    (async () => {
-      setOpenLoading(true);
-      const brands = await getAllBrand();
-      setBrands(brands);
-      await Fetch.get(
-        `/api/v1/product/search-name?name=${searchName}&page=${currentPage}&size=${pageSize}`
-      )
-        .then((res: any) => {
-          if (res.status === 200) {
-            let data = res.data.data.content;
-            data.map(async (item: any) => {
-              item.image = await handleDownloadImage(item.image);
-              item.price = item.minPrice + " ~ " + item.maxPrice;
-              if (item.minPrice == item.maxPrice) {
-                item.price = item.minPrice;
-              }
-            });
-            setData(data);
-            setTotalPage(res.data.data.totalPages);
-            onShowResult({
-              type: "success",
-              msg: "Lấy dữ liệu thành công!",
-            });
-          }
-        })
-        .catch((error: any) => {
-          onShowResult({
-            type: "error",
-            msg: "Lấy dữ liệu thất bại!",
-          });
-        });
-    })();
-  }, []);
-
-  const getAllBrand = async () => {
-    return await Fetch.get("/api/v1/brand/all-list")
-      .then(async (res: any) => {
+    setOpenLoading(true);
+    Fetch.get(`/api/v1/account/get-staff-information`)
+      .then((res: any) => {
         if (res.status === 200) {
-          let data = res.data.data;
+          setData(res.data.data);
+          //   setTotalPage(res.data.data.totalPages);
           onShowResult({
             type: "success",
             msg: "Lấy dữ liệu thành công!",
           });
-          return data;
         }
       })
       .catch((error: any) => {
         onShowResult({
           type: "error",
-          msg: error.message,
+          msg: "Lấy dữ liệu thất bại!",
         });
-        return [];
       });
-  };
-
-  const handleDownloadImage = async (image: any) => {
-    if (!image) return "";
-    const imageRef = ref(storage, `images/${image}`);
-    const url = await getDownloadURL(imageRef)
-      .then((url) => {
-        return url;
-      })
-      .catch((error: any) => {
-        // onShowResult({
-        //   type: "error",
-        //   msg: "Không tìm thấy ảnh!",
-        // });
-        return "";
-      });
-    return url;
-  };
-
-  const handleUploadImage = async (file: any) => {
-    if (!file) return;
-    const imageStr = file.name + v4();
-    const imageRef = ref(storage, `images/${imageStr}`);
-    await uploadBytes(imageRef, file)
-      .then((snapshot) => {
-        onShowResult({
-          type: "success",
-          msg: "Lưu ảnh thành công!",
-        });
-      })
-      .catch((error) => {
-        onShowResult({
-          type: "error",
-          msg: error,
-        });
-        return "";
-      });
-    return imageStr;
-  };
+  }, []);
 
   const handleConfirm = useCallback(
-    async (_product: any) => {
-      const image = await handleUploadImage(_product.imageRef);
-      const _data = {
-        id: _product.id,
-        name: _product.name,
-        description: _product.description,
-        price: _product.price,
-        image: image,
-        brandId: _product.brandId,
-        status: _product.status,
-      };
+    (staff: any) => {
+      staff.roleId = 2;
+      if (staff.password !== staff.cf_password) {
+        onShowResult({
+          type: "error",
+          msg: "Mật khẩu không trùng khớp!",
+        });
+        return;
+      }
       if (action === "create") {
-        Fetch.post("/api/v1/product", _data)
+        Fetch.post("/api/v1/account", staff)
           .then((res: any) => {
             if (res.status === 200) {
               onShowResult({
@@ -199,7 +111,6 @@ const ProductPage = () => {
               });
               setFetching(!fetching);
               setOpenDialog(false);
-              router.push(`/manager/product/${res.data.data.id}`);
             }
           })
           .catch((error: any) => {
@@ -209,7 +120,7 @@ const ProductPage = () => {
             });
           });
       } else {
-        Fetch.put("/api/v1/product", _data)
+        Fetch.post("/api/v1/account/update-staff-by-admin", staff)
           .then((res: any) => {
             if (res.status === 200) {
               onShowResult({
@@ -226,45 +137,26 @@ const ProductPage = () => {
               msg: "Cập nhật thất bại!",
             });
           });
-        setProduct({});
+        setSole({});
       }
     },
     [action, fetching]
   );
 
   useEffect(() => {
-    (async () => {
-      Fetch.get(
-        `/api/v1/product/search-name?name=${searchName}&page=${currentPage}&size=${pageSize}`
-      )
-        .then((res: any) => {
-          if (res.status === 200) {
-            let data = res.data.data.content;
-            data.map(async (item: any) => {
-              item.image = await handleDownloadImage(item.image);
-              item.price =
-                convertMoney(item.minPrice || 0) +
-                " ~ " +
-                convertMoney(item.maxPrice || 0);
-              if (item.minPrice == item.maxPrice) {
-                item.price = convertMoney(item.minPrice || 0);
-              }
-            });
-            setData(data);
-            setTotalPage(res.data.data.totalPages);
-            onShowResult({
-              type: "success",
-              msg: "Lấy dữ liệu thành công!",
-            });
-          }
-        })
-        .catch((error: any) => {
-          onShowResult({
-            type: "error",
-            msg: "Lấy dữ liệu thất bại!",
-          });
+    Fetch.get(`/api/v1/account/get-staff-information`)
+      .then((res: any) => {
+        if (res.status === 200) {
+          setData(res.data.data);
+          //   setTotalPage(res.data.data.totalPages);
+        }
+      })
+      .catch((error: any) => {
+        onShowResult({
+          type: "error",
+          msg: "Lấy dữ liệu thất bại!",
         });
-    })();
+      });
   }, [searchName, currentPage, pageSize, fetching]);
 
   const handlePrevious = () => {
@@ -288,14 +180,13 @@ const ProductPage = () => {
         snackMsg={snackMsg}
         onClose={onCloseSnack}
       />
-      <ModalProduct
+      <ModalStaff
         open={openDialog}
         handleOpen={handleOpen}
         action={action}
-        size={size}
-        brands={brands}
-        onConfirm={(size: any) => {
-          handleConfirm(size);
+        staff={sole}
+        onConfirm={(staff: any) => {
+          handleConfirm(staff);
         }}
       />
       <Card className="h-full w-full">
@@ -303,10 +194,10 @@ const ProductPage = () => {
           <div className="mb-8 flex items-center justify-between gap-8">
             <div>
               <Typography variant="h5" color="blue-gray">
-                Sản phẩm
+                Nhân viên
               </Typography>
               <Typography color="gray" className="mt-1 font-normal">
-                Thông tin tất cả các sản phẩm
+                Thông tin tất cả các nhân viên
               </Typography>
             </div>
             <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
@@ -315,7 +206,7 @@ const ProductPage = () => {
                 size="sm"
                 onClick={() => {
                   setAction("create");
-                  setProduct({});
+                  setSole({});
                   handleOpen();
                 }}
               >
@@ -370,24 +261,19 @@ const ProductPage = () => {
             </thead>
             <tbody>
               {data?.map(
-                (
-                  { id, name, image, description, quantity, price, status },
-                  index
-                ) => {
+                ({ id, username, fullname, email, phone, address }, index) => {
                   const isLast = index === data.length - 1;
-                  const className = `py-3 px-5 ${
-                    index === data.length - 1
-                      ? ""
-                      : "border-b border-blue-gray-50"
-                  }`;
+                  const classes = isLast
+                    ? "p-4"
+                    : "p-4 border-b border-blue-gray-50";
                   return (
                     <tr key={id}>
-                      <td className={className}>
+                      <td className={classes}>
                         <Typography variant="small" color="blue-gray">
                           {index + 1}
                         </Typography>
                       </td>
-                      <td className={className}>
+                      <td className={classes}>
                         <div className="flex items-center gap-3">
                           <div className="flex flex-col">
                             <Typography
@@ -395,23 +281,12 @@ const ProductPage = () => {
                               color="blue-gray"
                               className="font-normal"
                             >
-                              {name || ""}
+                              {username || "Chưa có"}
                             </Typography>
                           </div>
                         </div>
                       </td>
-                      <td className={className}>
-                        <img
-                          src={
-                            // @ts-ignore
-                            image && image.includes("https")
-                              ? image
-                              : "/nike-air-force-1-shadow-all-white.jpg"
-                          }
-                          className="w-16 h-16"
-                        />
-                      </td>
-                      {/* <td className={className}>
+                      <td className={classes}>
                         <div className="flex items-center gap-3">
                           <div className="flex flex-col">
                             <Typography
@@ -419,12 +294,12 @@ const ProductPage = () => {
                               color="blue-gray"
                               className="font-normal"
                             >
-                              {description || ""}
+                              {fullname || "Chưa có"}
                             </Typography>
                           </div>
                         </div>
-                      </td> */}
-                      <td className={className}>
+                      </td>
+                      <td className={classes}>
                         <div className="flex items-center gap-3">
                           <div className="flex flex-col">
                             <Typography
@@ -432,12 +307,12 @@ const ProductPage = () => {
                               color="blue-gray"
                               className="font-normal"
                             >
-                              {quantity || "0"}
+                              {email || "Chưa có"}
                             </Typography>
                           </div>
                         </div>
                       </td>
-                      <td className={className}>
+                      <td className={classes}>
                         <div className="flex items-center gap-3">
                           <div className="flex flex-col">
                             <Typography
@@ -445,29 +320,39 @@ const ProductPage = () => {
                               color="blue-gray"
                               className="font-normal"
                             >
-                              {price || "0"}
+                              {phone || "Chưa có"}
                             </Typography>
                           </div>
                         </div>
                       </td>
-                      <td className={className}>
-                        <Chip
-                          variant="gradient"
-                          color={status ? "green" : "blue-gray"}
-                          value={
-                            status ? "Đang kinh doanh" : "Ngừng kinh doanh"
-                          }
-                          className="py-0.5 px-2 text-[11px] font-medium"
-                        />
+                      <td className={classes}>
+                        <div className="flex items-center gap-3">
+                          <div className="flex flex-col">
+                            <Typography
+                              variant="small"
+                              color="blue-gray"
+                              className="font-normal"
+                            >
+                              {address || "Chưa có"}
+                            </Typography>
+                          </div>
+                        </div>
                       </td>
-
-                      <td className={className}>
-                        <Tooltip content="Chi tiết sản phẩm">
+                      <td className={classes}>
+                        <Tooltip content="Sửa nhân viên">
                           <IconButton
                             variant="text"
                             onClick={() => {
                               setAction("edit");
-                              router.push(`/manager/product/${id}`);
+                              setSole({
+                                id,
+                                username,
+                                address,
+                                fullname,
+                                email,
+                                phone,
+                              });
+                              handleOpen();
                             }}
                           >
                             <PencilIcon className="h-4 w-4" />
@@ -481,7 +366,7 @@ const ProductPage = () => {
             </tbody>
           </table>
         </CardBody>
-        <CardFooter className="flex items-center justify-between border-t border-blue-gray-50 p-4">
+        {/* <CardFooter className="flex items-center justify-between border-t border-blue-gray-50 p-4">
           <Typography variant="small" color="blue-gray" className="font-normal">
             Trang {currentPage + 1} / {totalPage}
           </Typography>
@@ -497,69 +382,47 @@ const ProductPage = () => {
               </Button>
             ) : null}
           </div>
-        </CardFooter>
+        </CardFooter> */}
       </Card>
     </>
   );
 };
 
-const ModalProduct = ({
-  open,
-  handleOpen,
-  size,
-  action,
-  onConfirm,
-  brands,
-}: any) => {
+const ModalStaff = ({ open, handleOpen, staff, action, onConfirm }: any) => {
   const [showDialog, setShowDialog] = useState(false);
   const [openConfirm, setOpenConfirm] = useState(false);
-  const [productState, setProductState] = useState({
+  const [staffState, setStaffState] = useState({
     id: "",
-    name: "",
-    description: "",
-    // price: 0 as any,
-    image: "",
-    imageRef: "" as any,
-    status: 1 as any,
+    username: "",
+    fullname: "",
+    email: "",
+    phone: "",
+    password: "",
+    address: "",
+    cf_password: "",
   });
-  const fileInput = useRef<HTMLInputElement | any>(null);
-
-  const handleClickChooseFile = (e: any) => {
-    if (fileInput.current != null) {
-      fileInput.current?.click();
-    }
-  };
-
-  const handleChangeFileValue = (e: any) => {
-    const [file] = e.target.files;
-    // fileInput.current = e.target.files[0];
-    setProductState((cur) => ({
-      ...cur,
-      image: file.name,
-      imageRef: file,
-    }));
-  };
 
   useEffect(() => {
     setShowDialog(open);
   }, [open]);
 
   useEffect(() => {
-    if (size?.id) setProductState(size);
+    if (staff?.id) setStaffState(staff);
     else
-      setProductState({
+      setStaffState({
         id: "",
-        name: "",
-        description: "",
-        // price: 0,
-        image: "",
-        imageRef: "",
-        status: 1,
+        username: "",
+        fullname: "",
+        email: "",
+        phone: "",
+        password: "",
+        address: "",
+        cf_password: "",
       });
-  }, [size]);
+  }, [staff]);
 
   const handleConfirm = () => {
-    onConfirm?.(productState);
+    onConfirm?.(staffState);
   };
   return (
     <>
@@ -576,101 +439,109 @@ const ModalProduct = ({
             className="mb-4 grid h-28 place-items-center"
           >
             <Typography variant="h3" color="white">
-              {action === "create" ? "Thêm mới" : "Cập nhật"} Sản phẩm
+              {action === "create" ? "Thêm mới" : "Cập nhật"} nhân viên
             </Typography>
           </CardHeader>
           <CardBody className="flex flex-col gap-4">
             <div className="flex flex-wrap justify-center">
               <div className="w-full lg:w-12/12 px-4">
-                <div className="relative w-full mb-3 gap-3">
+                <div className="relative w-full mb-3">
                   <Input
-                    label="Tên"
+                    label="Tên đăng nhập"
                     size="lg"
                     onChange={(e) =>
-                      setProductState((cur) => ({
+                      setStaffState((cur) => ({
                         ...cur,
-                        name: e.target.value,
+                        username: e.target.value,
                       }))
                     }
-                    defaultValue={productState?.name}
+                    defaultValue={staffState?.username}
                   />
                 </div>
-                <div className="relative w-full mb-3 gap-3">
-                  <Textarea
-                    label="Mô tả"
+                <div className="relative w-full mb-3">
+                  <Input
+                    label="Tên nhân viên"
                     size="lg"
                     onChange={(e) =>
-                      setProductState((cur) => ({
+                      setStaffState((cur) => ({
                         ...cur,
-                        description: e.target.value,
+                        fullname: e.target.value,
                       }))
                     }
-                    defaultValue={productState?.description}
+                    defaultValue={staffState?.fullname}
                   />
                 </div>
-                <div className="relative w-full mb-3 gap-3">
-                  <Select label="Thương hiệu" size="md">
-                    {brands.map((item: any) => (
-                      <Option
-                        key={item.id}
-                        value={item.id + ""}
-                        onClick={() => {
-                          setProductState((cur) => ({
+                <div className="relative w-full mb-3">
+                  <Input
+                    label="Địa chỉ"
+                    size="lg"
+                    onChange={(e) =>
+                      setStaffState((cur) => ({
+                        ...cur,
+                        address: e.target.value,
+                      }))
+                    }
+                    defaultValue={staffState?.address}
+                  />
+                </div>
+                <div className="relative w-full mb-3">
+                  <Input
+                    label="Số điện thoại"
+                    size="lg"
+                    onChange={(e) =>
+                      setStaffState((cur) => ({
+                        ...cur,
+                        phone: e.target.value,
+                      }))
+                    }
+                    defaultValue={staffState?.phone}
+                  />
+                </div>
+                <div className="relative w-full mb-3">
+                  <Input
+                    label="Email"
+                    size="lg"
+                    onChange={(e) =>
+                      setStaffState((cur) => ({
+                        ...cur,
+                        email: e.target.value,
+                      }))
+                    }
+                    defaultValue={staffState?.email}
+                  />
+                </div>
+                {action == "create" && (
+                  <>
+                    <div className="relative w-full mb-3">
+                      <Input
+                        label="Mật khẩu"
+                        size="lg"
+                        type="password"
+                        onChange={(e) =>
+                          setStaffState((cur) => ({
                             ...cur,
-                            brandId: item.id,
-                          }));
-                        }}
-                      >
-                        {item.name}
-                      </Option>
-                    ))}
-                  </Select>
-                </div>
-                {/* <div className="relative w-full mb-3 gap-3">
-                  <Input
-                    label="Giá"
-                    size="lg"
-                    onChange={(e) =>
-                      setProductState((cur) => ({
-                        ...cur,
-                        price: e.target.value,
-                      }))
-                    }
-                    defaultValue={productState?.price}
-                  />
-                </div> */}
-                <div className="relative w-full mb-3 gap-3">
-                  <Input
-                    label="Hình ảnh"
-                    size="lg"
-                    className="pr-20"
-                    containerProps={{
-                      className: "min-w-0",
-                    }}
-                    onChange={(e) =>
-                      setProductState((cur) => ({
-                        ...cur,
-                        image: e.target.value,
-                      }))
-                    }
-                    defaultValue={productState?.image}
-                  />
-                  <Button
-                    size="sm"
-                    color={"blue-gray"}
-                    className="!absolute right-1 top-1 rounded"
-                    onClick={handleClickChooseFile}
-                  >
-                    Chọn ảnh
-                    <input
-                      type="file"
-                      id="file"
-                      ref={fileInput}
-                      style={{ display: "none" }}
-                      onChange={handleChangeFileValue}
-                    />
-                  </Button>
-                </div>
+                            password: e.target.value,
+                          }))
+                        }
+                        defaultValue={staffState?.password}
+                      />
+                    </div>
+                    <div className="relative w-full mb-3">
+                      <Input
+                        label="Nhập lại mật khẩu"
+                        type="password"
+                        size="lg"
+                        onChange={(e) =>
+                          setStaffState((cur) => ({
+                            ...cur,
+                            cf_password: e.target.value,
+                          }))
+                        }
+                        defaultValue={staffState?.cf_password}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </CardBody>
@@ -706,6 +577,6 @@ const ModalProduct = ({
   );
 };
 
-export { ModalProduct };
+export { ModalStaff };
 
-export default ProductPage;
+export default StaffPage;

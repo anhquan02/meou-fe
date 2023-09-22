@@ -37,12 +37,19 @@ export function SignIn() {
             type: "LOGIN",
             payload: {
               token: res.data.token,
-              user: { username: res.data.username, roleId: res.data.roleId },
+              user: {
+                username: res.data.username,
+                roleId: res.data.roleId,
+                fullname: res.data.fullname,
+                email: res.data.email,
+                phone: res.data.phone,
+                address: res.data.address,
+              },
             },
           });
-          if (res.data.roleId === 1) {
+          if (res.data.roleId === 1 || res.data.roleId === 2) {
             router.push("/manager/home");
-          }else{
+          } else {
             router.push("/");
           }
         } else {

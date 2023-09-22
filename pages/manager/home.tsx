@@ -131,11 +131,11 @@ export default function Home() {
           <div className="flex flex-col p-4 border border-blue-gray-300 rounded-lg">
             <Typography variant="h4">Hôm nay</Typography>
             <h4 className="text-orange-600">
-              {(todaySactistical?.monthQuantity
-                ? todaySactistical?.monthQuantity
+              {(todaySactistical?.todayQuantity
+                ? todaySactistical?.todayQuantity
                 : "0") +
                 " đơn hàng / " +
-                convertMoney(todaySactistical?.monthPrice || 0) || ""}
+                convertMoney(todaySactistical?.todayPrice || 0) || ""}
             </h4>
           </div>
           <div className="flex flex-col p-4 border border-blue-gray-300 rounded-lg">

@@ -398,7 +398,7 @@ const ModalVoucher = ({
         name: "",
         value: 0,
         dayStart: "",
-        dayEnd: "",        
+        dayEnd: "",
       });
       setValueDate({ startDate: new Date(), endDate: new Date() });
     }
@@ -409,8 +409,8 @@ const ModalVoucher = ({
       id: voucherState?.id,
       name: voucherState?.name,
       value: voucherState?.value,
-      dayStart: new Date(valueDate.startDate),
-      dayEnd: new Date(valueDate.endDate),
+      dayStart: convertDate(valueDate.startDate) + " 00:00:00",
+      dayEnd: convertDate(valueDate.endDate) + " 00:00:00",
     };
     onConfirm?.(_voucher);
   };

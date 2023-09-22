@@ -5,6 +5,7 @@ import Fetch from "../../services/Fetch";
 import { getDownloadURL, ref } from "firebase/storage";
 import { storage } from "../../services/firebase";
 import { useStore } from "react-redux";
+import convertMoney from "../../services/Utils";
 
 const Product = () => {
   const router = useRouter();
@@ -137,7 +138,7 @@ const Product = () => {
                         selected.size === item.id
                           ? "bg-blue-gray-500"
                           : "bg-gray-100"
-                      } w-10 h-10 rounded-lg p-4 flex items-center justify-center`}
+                      } w-auto h-10 rounded-lg p-4 flex items-center justify-center`}
                       onClick={() =>
                         setSelected({ ...selected, size: item.id })
                       }
@@ -148,9 +149,9 @@ const Product = () => {
                 </div>
               </div>
               {/* select color */}
-              <div className="flex flex-col gap-y-2">
+              <div className="flex flex-col gap-y-2 ">
                 <h1 className="text-sm text-gray-400">Chọn màu</h1>
-                <div className="flex flex-row gap-x-2">
+                <div className="flex flex-row gap-x-4">
                   {product?.color.map((item: any, index: number) => (
                     <button
                       key={index}
@@ -158,7 +159,7 @@ const Product = () => {
                         selected.color === item.id
                           ? "bg-blue-gray-500"
                           : "bg-gray-100"
-                      } w-10 h-10 rounded-lg p-4 flex items-center justify-center`}
+                      } w-auto h-10 rounded-lg p-4 flex items-center justify-center`}
                       onClick={() =>
                         setSelected({ ...selected, color: item.id })
                       }
@@ -268,11 +269,10 @@ const Product = () => {
               <div className="flex flex-col gap-y-2">
                 <h1 className="text-lg font-bold">
                   {productItem?.price
-                    ? productItem?.price
-                    : product?.product.minPrice +
+                    ? convertMoney(productItem?.price * productItem?.q || 0)
+                    : convertMoney(product?.product.minPrice || 0) +
                       " ~ " +
-                      product?.product.maxPrice}{" "}
-                  VNĐ
+                      convertMoney(product?.product.maxPrice || 0)}{" "}
                 </h1>
               </div>
               {/* btn Thêm vào giỏ hàng */}
@@ -284,11 +284,14 @@ const Product = () => {
                       : "bg-blue-gray-500"
                   } w-full h-10 rounded-lg p-4 flex items-center justify-center`}
                   onClick={() => {
+                    onShowResult({
+                      type: "success",
+                      msg: "Thêm vào giỏ hàng thành công",
+                    });
                     store.dispatch({
                       type: "ADD_TO_CART",
                       payload: productItem,
                     });
-                    console.log(store.getState());
                   }}
                   disabled={productItem?.price == null}
                 >

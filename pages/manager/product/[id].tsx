@@ -52,7 +52,7 @@ const MAPPING_EN_VI = {
 
 const TABLE_HEAD = [
   "Ảnh",
-  "Thương hiệu",
+  // "Thương hiệu",
   "Màu sắc",
   "Kích cỡ",
   "Đế",
@@ -92,7 +92,7 @@ const ProductDetail = () => {
   const [alertType, setAlertType] = useState("success");
   const [snackMsg, setSnackMsg] = useState("");
   const { id } = router.query;
-  const [product, setProduct] = useState({
+  const [product, setProduct] = useState<any>({
     name: "",
     image: "",
     imageURL: "",
@@ -101,6 +101,7 @@ const ProductDetail = () => {
     description: "",
     quantity: 0 as any,
     status: true as any,
+    brandId: "" as any,
   });
   const [newItems, setNewItems] = useState<ProductItem>({
     brandId: 1,
@@ -121,6 +122,8 @@ const ProductDetail = () => {
   const [size, setSize] = useState<any[]>([]);
   const [sole, setSole] = useState<any[]>([]);
   const [insole, setInsole] = useState<any[]>([]);
+
+  const productBrand = useRef<any>(null);
 
   const onCloseSnack = () => {
     setOpenSnack(false);
@@ -313,6 +316,8 @@ const ProductDetail = () => {
             if (data.minPrice == data.maxPrice) {
               data.price = data.minPrice;
             }
+            data.brandId = data.brandId + "";
+            productBrand.current = data.brandId;
             setProduct(data);
             onShowResult({
               type: "success",
@@ -350,7 +355,7 @@ const ProductDetail = () => {
     let reader: FileReader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = (e: any) => {
-      setProduct((cur) => ({
+      setProduct((cur: any) => ({
         ...cur,
         image: e.target.result,
         imageURL: e.target.result,
@@ -442,13 +447,18 @@ const ProductDetail = () => {
       }
     }
     if (action == "update-product") {
-      const image = await handleUploadImage(product.imageRef);
+      let image = product.image;
+      if (product.imageRef) {
+        image = await handleUploadImage(product.imageRef);
+      }
       const data = {
         ...product,
-        nameImage: image,
+        image: image,
         status: product.status,
       };
-      Fetch.put("/api/v1/product", product)
+      // remove field not use
+      delete data.price;
+      Fetch.put("/api/v1/product", data)
         .then((res: any) => {
           if (res.status === 200) {
             onShowResult({
@@ -614,7 +624,7 @@ const ProductDetail = () => {
       <TabPanel value="create-item" className="min-h-[500px]">
         <div className="">
           <div className="grid grid-cols-2 gap-4 mb-4">
-            <Select label="Thương hiệu" size="md">
+            {/* <Select label="Thương hiệu" size="md">
               {brand.map((item) => (
                 <Option
                   key={item.id}
@@ -630,7 +640,7 @@ const ProductDetail = () => {
                   {item.name}
                 </Option>
               ))}
-            </Select>
+            </Select> */}
             {/* sole */}
             <Select label="Đế" size="md">
               {sole.map((item) => (
@@ -798,7 +808,7 @@ const ProductDetail = () => {
                 }));
               }}
             />
-            <Select
+            {/* <Select
               label="Thương hiệu"
               size="md"
               value={productItem.brandId + ""}
@@ -814,7 +824,7 @@ const ProductDetail = () => {
                   {item.name}
                 </Option>
               ))}
-            </Select>
+            </Select> */}
             <Select
               label="Màu"
               size="md"
@@ -949,7 +959,7 @@ const ProductDetail = () => {
         <CardBody className=" px-4">
           <div className="flex flex-wrap justify-center">
             <div className="">
-              <div className="grid md:grid-cols-4 grid-cols-1 gap-4 mb-4">
+              <div className="grid md:grid-cols-5 grid-cols-1 gap-4 mb-4">
                 <Input
                   label="Tên sản phẩm"
                   type="text"
@@ -978,14 +988,34 @@ const ProductDetail = () => {
                     // setProduct({ ...product, price: e.target.value });
                   }}
                 />
+                {product.brandId && (
+                  <Select
+                    label="Thương hiệu"
+                    size="md"
+                    value={product?.brandId + "" || "1"}
+                    onChange={(value) => {
+                      setProduct((cur: any) => ({
+                        ...cur,
+                        brandId: value,
+                      }));
+                      productBrand.current = value;
+                    }}
+                  >
+                    {brand.map((item) => (
+                      <Option key={item.id} value={item.id + ""}>
+                        {item.name}
+                      </Option>
+                    ))}
+                  </Select>
+                )}
                 <div>
                   <div className="flex gap-4">
                     <Radio
                       name="color"
                       color="green"
                       label="Đang kinh doanh"
-                      defaultChecked={product.status ==1}
-                      onClick={()=>{
+                      defaultChecked={product.status == 1}
+                      onClick={() => {
                         setProduct({ ...product, status: 1 });
                       }}
                     />
@@ -994,7 +1024,7 @@ const ProductDetail = () => {
                       color="red"
                       label="Ngừng kinh doanh"
                       defaultChecked={product.status != 1}
-                      onClick={()=>{
+                      onClick={() => {
                         setProduct({ ...product, status: 2 });
                       }}
                     />
@@ -1175,10 +1205,10 @@ const ProductDetail = () => {
                                         className="w-16 h-16"
                                       />
                                     </td>
-                                    <td className={className}>
+                                    {/* <td className={className}>
                                       {brand.find((item) => item.id === brandId)
                                         ?.name || ""}
-                                    </td>
+                                    </td> */}
                                     <td className={className}>
                                       {color.find((item) => item.id === colorId)
                                         ?.name || ""}

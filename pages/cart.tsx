@@ -8,6 +8,7 @@ import { Card, CardBody, Input, Textarea } from "@material-tailwind/react";
 import Fetch from "../services/Fetch";
 import { useRouter } from "next/router";
 import convertMoney from "../services/Utils";
+import ConfirmDialog from "../components/ConfirmDialog";
 
 const CartPage = () => {
   const [openLoading, setOpenLoading] = useState(false);
@@ -21,6 +22,8 @@ const CartPage = () => {
   const onCloseSnack = () => {
     setOpenSnack(false);
   };
+  const { auth }: any = store.getState();
+  const [openConfirm, setOpenConfirm] = useState(false);
 
   const onShowResult = ({ type, msg }: any) => {
     setOpenSnack(true);
@@ -82,6 +85,19 @@ const CartPage = () => {
     const filterItems = newItems.filter((item: any) => item.q > 0);
     setItems(filterItems);
   };
+
+  useEffect(() => {
+    const { auth }: any = store.getState();
+    const { user } = auth;
+    if (user) {
+      setOrderInformation({
+        nameCustomer: user.fullname,
+        emailCustomer: user.email,
+        phoneCustomer: user.phone,
+        addressCustomer: user.address,
+      });
+    }
+  }, [store]);
 
   const handleOrder = () => {
     if (items.length === 0) {
@@ -249,12 +265,17 @@ const CartPage = () => {
         snackMsg={snackMsg}
         onClose={onCloseSnack}
       />
+      <ConfirmDialog
+        onShow={openConfirm}
+        onClose={() => {
+          setOpenConfirm(false);
+        }}
+        onConfirm={() => handleOrder()}
+      />
       <div className="mx-auto max-w-screen-xl lg:rounded-lg p-4 my-6">
         <div className="content-container flex flex-col  small:items-start py-6 relative gap-4">
           <div className=" w-full">
-            <div className="w-full">
-              <SignInPrompt />
-            </div>
+            <div className="w-full">{!auth.token && <SignInPrompt />}</div>
             <div className="w-full my-4">{renderItems()}</div>
           </div>
           <div className=" w-full">
@@ -292,6 +313,7 @@ const CartPage = () => {
                       label="Tên khách hàng"
                       type="text"
                       color="light-blue"
+                      value={orderInformation.nameCustomer || ""}
                       onChange={(e) => {
                         setOrderInformation({
                           ...orderInformation,
@@ -303,6 +325,7 @@ const CartPage = () => {
                       label="Số điện thoại"
                       type="text"
                       color="light-blue"
+                      value={orderInformation.phoneCustomer || ""}
                       onChange={(e) => {
                         setOrderInformation({
                           ...orderInformation,
@@ -314,6 +337,7 @@ const CartPage = () => {
                       label="Địa chỉ"
                       type="text"
                       color="light-blue"
+                      value={orderInformation.addressCustomer || ""}
                       onChange={(e) => {
                         setOrderInformation({
                           ...orderInformation,
@@ -326,6 +350,7 @@ const CartPage = () => {
                       label="Email"
                       type="text"
                       color="light-blue"
+                      value={orderInformation.emailCustomer || ""}
                       onChange={(e) => {
                         setOrderInformation({
                           ...orderInformation,
@@ -338,6 +363,7 @@ const CartPage = () => {
                     label="Ghi chú"
                     className="w-full "
                     color="light-blue"
+                    value={orderInformation.note || ""}
                     onChange={(e) => {
                       setOrderInformation({
                         ...orderInformation,
@@ -349,7 +375,7 @@ const CartPage = () => {
               </Card>
               <button
                 className="bg-blue-gray-500 text-white rounded-lg p-2 w-full"
-                onClick={() => handleOrder()}
+                onClick={() => setOpenConfirm(true)}
               >
                 Đặt hàng
               </button>
